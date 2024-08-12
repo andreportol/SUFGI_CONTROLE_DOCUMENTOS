@@ -4,13 +4,13 @@ from .models import CadastroProcesso
 @admin.register(CadastroProcesso)
 class CadastroProcessoAdmin(admin.ModelAdmin):
     # Campos a serem exibidos na lista de objetos
-    list_display = ('numero_processo', 'requerente','assunto', 'data_entrada', 'data_saida','observacao','anexo','get_usuario')
+    list_display = ('numero_processo', 'requerente','assunto', 'data_entrada', 'data_saida','status','observacao','anexo','get_usuario')
     
     # Campos a serem filtrados na barra lateral
     #list_filter = ('data_entrada', 'data_saida')
     
     # Campos para busca na interface administrativa
-    search_fields = ('numero_processo', 'requerente')
+    search_fields = ('numero_processo', 'requerente','assunto')
     
     # Campos que podem ser editados diretamente na lista de objetos
     list_editable = ('data_saida',)
