@@ -3,6 +3,7 @@ from django.db import models
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from datetime import timedelta
 
 User = get_user_model()
 
@@ -20,9 +21,33 @@ class Base(models.Model):
             self.usuario = self._request.user
         super().save(*args, **kwargs)
 
-class CadastroProcesso(Base):
-    numero_processo = models.CharField(_('Número do Processo'), max_length=20, blank=False, unique=True)
-    requerente = models.CharField(_('Requerente'), max_length=120, blank=False)
+class Setor(Base):
+    sigla_setor = models.CharField(verbose_name='Setor', max_length=5, blank=False, help_text='Digite a sigla do setor.', unique=True)
+    
+    class Meta:
+        verbose_name = 'Setor'
+        verbose_name_plural = 'Setores'
+    
+    def __str__(self):
+        return self.sigla_setor
+
+class Servidor(Base):        
+    nome = models.CharField(verbose_name='Nome', max_length=120, blank=False, unique=True)
+    setor_servidor = models.ForeignKey(Setor,verbose_name="Setor", on_delete=models.PROTECT)
+    data_entrada = models.DateField(verbose_name='Data de entrada', blank=False)
+    data_saida = models.DateField(verbose_name='Data de saída', blank=True, null=True)
+    ativo = models.BooleanField(verbose_name='Ativo',default=True)
+    
+    class Meta:
+        verbose_name = 'Servidor'
+        verbose_name_plural = 'Servidores'
+    
+    def __str__(self):
+        return self.nome
+
+class Processo(Base):
+    numero_processo = models.CharField(verbose_name= 'Número do Processo', max_length=20, blank=False, unique=True)
+    requerente = models.CharField(verbose_name='Requerente', max_length=120, blank=False)
     TIPO_CHOICES_ASSUNTO = (
         ('ABERTURA DE INSCRICAO IMOBILIARIA AREA RURAL', 'Abertura de inscrição imobiliária área rural'),
         ('ABERTURA DE MATRICULA', 'Abertura de matrícula'),
@@ -53,6 +78,7 @@ class CadastroProcesso(Base):
         ('LEVANTAMENTO TOPOGRAFICO', 'Levantamento topográfico'),
         ('LOTEAMENTO', 'Loteamento'),
         ('NOTIFICACAO DE AUTO DE INFRACAO', 'Notificação de auto de infração'),
+        ('OUTRO ASSUNTO','Outro assunto'),
         ('PARECERES', 'Pareceres'),
         ('PARECER IMOBILIARIO', 'Parecer imobiliário'),
         ('PARCELAMENTO', 'Parcelamento'),
@@ -75,15 +101,16 @@ class CadastroProcesso(Base):
         ('REQUERIMENTO', 'Requerimento'),
     )
     assunto = models.CharField(verbose_name='Tipo de Assunto', max_length=255, choices=TIPO_CHOICES_ASSUNTO, blank=False)
-    data_entrada = models.DateField(_('Data de Entrada'), blank=False)
-    data_saida = models.DateField(_('Data de Saída'),blank=True, null=True)
+    data_abertura_processo = models.DateField(_('Data de abertura'), blank=False, help_text='Informe a data de abertura do Processo.')
+    setor_processo = models.ForeignKey(Setor, verbose_name='Setor', on_delete=models.PROTECT)
     TIPO_CHOICES_STATUS = (
         ('Aberto', 'Aberto'),
         ('Arquivado', 'Arquivado'),
-        ('Atendido', 'Atendido'),
+        ('Concluido', 'Concluído'),
     )
     status = models.CharField(verbose_name='Status',
-                              max_length=9, choices=TIPO_CHOICES_STATUS)
+                              max_length=9, choices=TIPO_CHOICES_STATUS, default='Aberto')
+    data_conclusao_processo = models.DateField(_('Data de conclusão'), blank=True,null=True, help_text='Informe a data de conclusão do Processo.')
     observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
     anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
     
@@ -96,9 +123,40 @@ class CadastroProcesso(Base):
 
     def clean(self):
         # Validação personalizada para garantir que a data de entrada seja anterior à data de saída.
-        if self.data_saida and self.data_entrada and self.data_entrada > self.data_saida:
-            raise ValidationError(_('A data de entrada não pode ser posterior à data de saída.'))
+        if self.data_conclusao_processo and self.data_abertura_processo and self.data_abertura_processo > self.data_conclusao_processo:
+            raise ValidationError(_('A data de cadastro não pode ser posterior à data de conclusão.'))
 
     def save(self, *args, **kwargs):
         self.clean()  # Executa a validação ao salvar
+        super().save(*args, **kwargs)
+
+class Oficio(Base):
+    numero_oficio = models.CharField('Número do Ofício', max_length=20, blank=False, unique=True)
+    assunto = models.CharField(verbose_name='Assunto', max_length=100, blank=False)
+    setor_oficio = models.ForeignKey(Setor, verbose_name='Setor', on_delete= models.PROTECT)
+    data_oficio = models.DateField(verbose_name='Data do ofício', blank=False, help_text='Digite a data do ofício.')
+    prazo = models.PositiveSmallIntegerField(verbose_name='Prazo', help_text='Quantidade de dias.', blank=False)
+    data_vencimento = models.DateField(verbose_name='Data de vencimento', blank=True, editable=False)
+    TIPO_CHOICES_STATUS = (
+        ('Aberto', 'Aberto'),
+        ('Arquivado', 'Arquivado'),
+        ('Atendido', 'Atendido'),
+    )
+    status = models.CharField(verbose_name='Status',
+                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
+    data_conclusao_oficio = models.DateField(verbose_name='Data de conclusão',blank=True, null=True)
+    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
+    anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
+    
+    class Meta:
+        verbose_name = ('Ofício')
+        verbose_name_plural = ('Ofícios')
+
+    def __str__(self):
+        return self.numero_oficio
+
+    def save(self, *args, **kwargs):
+        # Calcula a data de vencimento baseada na data do ofício e no prazo
+        if self.data_oficio and self.prazo:
+            self.data_vencimento = self.data_oficio + timedelta(days=self.prazo)
         super().save(*args, **kwargs)
