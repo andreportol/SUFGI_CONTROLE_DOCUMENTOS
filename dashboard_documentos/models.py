@@ -184,3 +184,23 @@ class CadastroEmail(Base):
     def __str__(self):
         return f"E-mail:{self.email}\nRemetente:{self.remetente}"
     
+class OrdemServico(Base):
+    assunto = models.CharField(verbose_name='Assunto', max_length=120, blank=False)
+    setor_os = models.ForeignKey(Setor,verbose_name='Setor de origem', on_delete=models.PROTECT)
+    data_os = models.DateField(verbose_name='Data OS', help_text='Data de abertura da OS')
+    TIPO_CHOICES_STATUS = (
+        ('Aberto', 'Aberto'),
+        ('Arquivado', 'Arquivado'),
+        ('Atendido', 'Atendido'),
+    )
+    status = models.CharField(verbose_name='Status',
+                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
+    data_conclusao = models.DateField(verbose_name='Data de conclusão', blank=True,null=True)
+    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
+
+    class Meta:
+        verbose_name = 'Ordem de Serviço'
+        verbose_name_plural = 'Ordem de Serviço'
+    
+    def __str__(self):
+        return self.assunto
