@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Processo, Oficio, Setor, Servidor
+from .models import Processo, Oficio, Setor, Servidor, CadastroEmail
 
 @admin.register(Setor)
 class SetorAdmin(admin.ModelAdmin):
@@ -65,6 +65,19 @@ class OficioAdmin(admin.ModelAdmin):
         obj._request = request
         super().save_model(request, obj, form, change)
 
+@admin.register(CadastroEmail)
+class EmailAdmin(admin.ModelAdmin):
+    list_display = ('remetente','email','assunto','setor_email','data_email',
+                    'status','data_conclusao','observacao')
+
+    # Campos para busca na interface administrativa
+    search_fields = ('remetente','email_rementente','assunto')
+    
+    # Campos que podem ser editados diretamente na lista de objetos
+    #list_editable = ('data_saida',)
+    
+    # Define a ordem padrão dos objetos
+    ordering = ('-data_email',)
 
 
 # Personalizando a interface administrativa

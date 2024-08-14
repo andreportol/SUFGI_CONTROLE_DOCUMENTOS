@@ -160,3 +160,23 @@ class Oficio(Base):
         if self.data_oficio and self.prazo:
             self.data_vencimento = self.data_oficio + timedelta(days=self.prazo)
         super().save(*args, **kwargs)
+
+class CadastroEmail(Base):
+    remetente = models.CharField(verbose_name='Remetente', max_length=120, blank=False)
+    email = models.EmailField(verbose_name='E-mail', max_length=100, blank=False)
+    assunto = models.CharField(verbose_name='Assunto', max_length=120, blank=False)
+    setor_email = models.ForeignKey(Setor, verbose_name='Setor', on_delete= models.PROTECT)
+    data_email = models.DateField(verbose_name='Data de entrada', blank=False)
+    TIPO_CHOICES_STATUS = (
+        ('Aberto', 'Aberto'),
+        ('Arquivado', 'Arquivado'),
+        ('Atendido', 'Atendido'),
+    )
+    status = models.CharField(verbose_name='Status',
+                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
+    data_conclusao = models.DateField(verbose_name='Data de conclusão', blank=True,null=True)
+    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
+
+    class Meta:
+        verbose_name = 'E-mail'
+        verbose_name_plural = 'E-mails'
