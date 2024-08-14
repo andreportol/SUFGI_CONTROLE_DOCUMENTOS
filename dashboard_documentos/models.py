@@ -180,3 +180,7 @@ class CadastroEmail(Base):
     class Meta:
         verbose_name = 'E-mail'
         verbose_name_plural = 'E-mails'
+    
+    def __str__(self):
+        return f"E-mail:{self.email}\nRemetente:{self.remetente}"
+    
