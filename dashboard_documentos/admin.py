@@ -4,6 +4,9 @@ from .models import Processo, Oficio, Setor, Servidor, CadastroEmail, OrdemServi
 @admin.register(Setor)
 class SetorAdmin(admin.ModelAdmin):
     list_display = ('sigla_setor',)
+
+    # Configura o campo ForeignKey para usar autocomplete
+    search_fields = ['sigla_setor']
     
     # Define a ordem padrão dos objetos
     ordering = ('sigla_setor',)
@@ -12,6 +15,9 @@ class SetorAdmin(admin.ModelAdmin):
 class ServidorAdmin(admin.ModelAdmin):
     list_display= ('nome','setor_servidor','data_entrada','data_saida','ativo')
 
+    # Configura o campo ForeignKey para usar autocomplete
+    autocomplete_fields = ['setor_servidor']
+    
     # Define a ordem padrão
     ordering = ('nome','ativo')
 
@@ -19,8 +25,23 @@ class ServidorAdmin(admin.ModelAdmin):
 
 @admin.register(Processo)
 class ProcessoAdmin(admin.ModelAdmin):
-    # Campos a serem exibidos na lista de objetos
-    list_display = ('numero_processo', 'requerente','assunto', 'data_abertura_processo', 'setor_processo','status','data_conclusao_processo','observacao','anexo','get_usuario')
+    # Define a ordem e a seleção dos campos exibidos na página de edição/detalhe de um modelo no Django Admin.
+    fields = (
+        'numero_processo', 
+        'requerente', 
+        'assunto',
+        'data_abertura', 
+        'setor', 
+        'status', 
+        'data_conclusao',
+        'observacao', 
+        'anexo',
+    )
+    # Define quais colunas são exibidas na lista de objetos de um modelo (a visão em tabela no Django Admin). 
+    list_display = ('numero_processo', 'requerente','assunto', 'data_abertura', 'setor','status','data_conclusao','observacao','anexo','get_usuario')
+    
+    # Configura o campo ForeignKey para usar autocomplete
+    autocomplete_fields = ['setor']
     
     # Campos a serem filtrados na barra lateral
     #list_filter = ('data_entrada', 'data_saida')
@@ -32,7 +53,7 @@ class ProcessoAdmin(admin.ModelAdmin):
     #list_editable = ('data_saida',)
     
     # Define a ordem padrão dos objetos
-    ordering = ('-data_abertura_processo',)
+    ordering = ('-data_abertura',)
     
     # Serve para mostrar o nome do usuário que cadastrou o processo
     def save_model(self, request, obj, form, change):
@@ -49,17 +70,33 @@ class ProcessoAdmin(admin.ModelAdmin):
 
 @admin.register(Oficio)
 class OficioAdmin(admin.ModelAdmin):
-    list_display=('numero_oficio','assunto','setor_oficio','data_oficio','prazo','data_vencimento','status',
-                  'data_conclusao_oficio','observacao', 'anexo')
+    # Define a ordem e a seleção dos campos exibidos na página de edição/detalhe de um modelo no Django Admin.
+    fields = (
+        'numero_oficio', 
+        'assunto',
+        'data_abertura',
+        'prazo', 
+        'setor', 
+        'status', 
+        'data_conclusao',
+        'observacao', 
+        'anexo',
+    )
+    # Define quais colunas são exibidas na lista de objetos de um modelo (a visão em tabela no Django Admin).     
+    list_display=('numero_oficio','assunto','data_abertura','prazo','data_vencimento','setor','status',
+                  'data_conclusao','observacao', 'anexo')
 
     # Campos para busca na interface administrativa
     search_fields = ('numero_oficio', 'assunto','data_vencimento')
+    
+    # Configura o campo ForeignKey para usar autocomplete
+    autocomplete_fields = ['setor']
     
     # Campos que podem ser editados diretamente na lista de objetos
     #list_editable = ('data_saida',)
     
     # Define a ordem padrão dos objetos
-    ordering = ('-data_oficio',)
+    ordering = ('data_vencimento',)
 
     def save_model(self, request, obj, form, change):
         obj._request = request
@@ -67,31 +104,61 @@ class OficioAdmin(admin.ModelAdmin):
 
 @admin.register(CadastroEmail)
 class EmailAdmin(admin.ModelAdmin):
-    list_display = ('remetente','email','assunto','setor_email','data_email',
-                    'status','data_conclusao','observacao')
+    # Define a ordem e a seleção dos campos exibidos na página de edição/detalhe de um modelo no Django Admin.
+    fields = (
+        'remetente',
+        'email',
+        'assunto',
+        'data_abertura', 
+        'setor', 
+        'status', 
+        'data_conclusao',
+        'observacao', 
+        'anexo',
+    )
+    list_display = ('remetente','email','assunto','setor','data_abertura',
+                    'status','data_conclusao','observacao', 'anexo')
 
     # Campos para busca na interface administrativa
-    search_fields = ('remetente','email_rementente','assunto')
+    search_fields = ('remetente','email','assunto')
     
+    # Configura o campo ForeignKey para usar autocomplete
+    autocomplete_fields = ['setor']
+
     # Campos que podem ser editados diretamente na lista de objetos
     #list_editable = ('data_saida',)
     
     # Define a ordem padrão dos objetos
-    ordering = ('-data_email',)
+    ordering = ('-data_abertura',)
 
 @admin.register(OrdemServico)
 class OrdemServicoAdmin(admin.ModelAdmin):
-    list_display = ('assunto','setor_os','data_os','status','data_conclusao','observacao')
+    # Define a ordem e a seleção dos campos exibidos na página de edição/detalhe de um modelo no Django Admin.
+    fields = (
+        'numero_os',
+        'requerente',
+        'assunto',
+        'data_abertura', 
+        'setor', 
+        'status', 
+        'data_conclusao',
+        'observacao', 
+        'anexo',
+    )
+    
+    list_display = ('numero_os','requerente','assunto','setor','data_abertura','status','data_conclusao','observacao')
+
+    # Configura o campo ForeignKey para usar autocomplete
+    autocomplete_fields = ['requerente', 'setor']
 
     # Campos para busca na interface administrativa
-    search_fields = ('assunto','setor_os')
+    search_fields = ('numero_os','assunto')
     
     # Campos que podem ser editados diretamente na lista de objetos
     #list_editable = ('data_saida',)
     
     # Define a ordem padrão dos objetos
-    ordering = ('-data_os',)
-
+    ordering = ('-data_abertura',)
 
 # Personalizando a interface administrativa
 admin.site.site_header = 'SEMADUR - SUFGI'

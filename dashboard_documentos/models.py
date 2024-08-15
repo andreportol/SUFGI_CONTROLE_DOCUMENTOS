@@ -43,9 +43,41 @@ class Servidor(Base):
         verbose_name_plural = 'Servidores'
     
     def __str__(self):
-        return self.nome
+        return f'Nome: {self.nome}'
+    
+    def clean(self):
+        # Validação personalizada para garantir que a data de entrada seja anterior à data de saída.
+        if self.data_saida and self.data_entrada and self.data_entrada > self.data_saida:
+            raise ValidationError(_('A data de cadastro não pode ser posterior à data de conclusão.'))
 
-class Processo(Base):
+    def save(self, *args, **kwargs):
+        self.clean()  # Executa a validação ao salvar
+        super().save(*args, **kwargs)
+
+class Documento(Base):
+    data_abertura = models.DateField(_('Data de abertura'), blank=False, help_text='Informe a data de abertura do Processo.')
+    setor = models.ForeignKey(Setor, verbose_name='Setor', on_delete=models.PROTECT)
+    TIPO_CHOICES_STATUS = (
+        ('Aberto', 'Aberto'),
+        ('Arquivado', 'Arquivado'),
+        ('Concluido', 'Concluído'),
+    )
+    status = models.CharField(verbose_name='Status',
+                              max_length=9, choices=TIPO_CHOICES_STATUS, default='Aberto')
+    data_conclusao = models.DateField(_('Data de conclusão'), blank=True,null=True, help_text='Informe a data de conclusão do Processo.')
+    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
+    anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
+
+    def clean(self):
+        # Validação personalizada para garantir que a data de entrada seja anterior à data de saída.
+        if self.data_conclusao and self.data_abertura and self.data_abertura > self.data_conclusao:
+            raise ValidationError(_('A data de cadastro não pode ser posterior à data de conclusão.'))
+
+    def save(self, *args, **kwargs):
+        self.clean()  # Executa a validação ao salvar
+        super().save(*args, **kwargs)
+
+class Processo(Documento):
     numero_processo = models.CharField(verbose_name= 'Número do Processo', max_length=20, blank=False, unique=True)
     requerente = models.CharField(verbose_name='Requerente', max_length=120, blank=False)
     TIPO_CHOICES_ASSUNTO = (
@@ -101,106 +133,55 @@ class Processo(Base):
         ('REQUERIMENTO', 'Requerimento'),
     )
     assunto = models.CharField(verbose_name='Tipo de Assunto', max_length=255, choices=TIPO_CHOICES_ASSUNTO, blank=False)
-    data_abertura_processo = models.DateField(_('Data de abertura'), blank=False, help_text='Informe a data de abertura do Processo.')
-    setor_processo = models.ForeignKey(Setor, verbose_name='Setor', on_delete=models.PROTECT)
-    TIPO_CHOICES_STATUS = (
-        ('Aberto', 'Aberto'),
-        ('Arquivado', 'Arquivado'),
-        ('Concluido', 'Concluído'),
-    )
-    status = models.CharField(verbose_name='Status',
-                              max_length=9, choices=TIPO_CHOICES_STATUS, default='Aberto')
-    data_conclusao_processo = models.DateField(_('Data de conclusão'), blank=True,null=True, help_text='Informe a data de conclusão do Processo.')
-    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
-    anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
-    
+        
     class Meta:
         verbose_name = _('Processo')
         verbose_name_plural = _('Processos')
 
     def __str__(self):
-        return self.numero_processo
-
-    def clean(self):
-        # Validação personalizada para garantir que a data de entrada seja anterior à data de saída.
-        if self.data_conclusao_processo and self.data_abertura_processo and self.data_abertura_processo > self.data_conclusao_processo:
-            raise ValidationError(_('A data de cadastro não pode ser posterior à data de conclusão.'))
-
-    def save(self, *args, **kwargs):
-        self.clean()  # Executa a validação ao salvar
-        super().save(*args, **kwargs)
-
-class Oficio(Base):
+        return f'Processo: {self.numero_processo}'
+  
+class Oficio(Documento):
     numero_oficio = models.CharField('Número do Ofício', max_length=20, blank=False, unique=True)
     assunto = models.CharField(verbose_name='Assunto', max_length=100, blank=False)
-    setor_oficio = models.ForeignKey(Setor, verbose_name='Setor', on_delete= models.PROTECT)
-    data_oficio = models.DateField(verbose_name='Data do ofício', blank=False, help_text='Digite a data do ofício.')
     prazo = models.PositiveSmallIntegerField(verbose_name='Prazo', help_text='Quantidade de dias.', blank=False)
     data_vencimento = models.DateField(verbose_name='Data de vencimento', blank=True, editable=False)
-    TIPO_CHOICES_STATUS = (
-        ('Aberto', 'Aberto'),
-        ('Arquivado', 'Arquivado'),
-        ('Atendido', 'Atendido'),
-    )
-    status = models.CharField(verbose_name='Status',
-                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
-    data_conclusao_oficio = models.DateField(verbose_name='Data de conclusão',blank=True, null=True)
-    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
-    anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
-    
+      
     class Meta:
         verbose_name = ('Ofício')
         verbose_name_plural = ('Ofícios')
 
     def __str__(self):
-        return self.numero_oficio
+        return f'Ofício: {self.numero_oficio}'
 
     def save(self, *args, **kwargs):
         # Calcula a data de vencimento baseada na data do ofício e no prazo
-        if self.data_oficio and self.prazo:
-            self.data_vencimento = self.data_oficio + timedelta(days=self.prazo)
+        if self.data_abertura and self.prazo:
+            self.data_vencimento = self.data_abertura + timedelta(days=self.prazo)
         super().save(*args, **kwargs)
 
-class CadastroEmail(Base):
+class CadastroEmail(Documento):
     remetente = models.CharField(verbose_name='Remetente', max_length=120, blank=False)
     email = models.EmailField(verbose_name='E-mail', max_length=100, blank=False)
     assunto = models.CharField(verbose_name='Assunto', max_length=120, blank=False)
-    setor_email = models.ForeignKey(Setor, verbose_name='Setor', on_delete= models.PROTECT)
-    data_email = models.DateField(verbose_name='Data de entrada', blank=False)
-    TIPO_CHOICES_STATUS = (
-        ('Aberto', 'Aberto'),
-        ('Arquivado', 'Arquivado'),
-        ('Atendido', 'Atendido'),
-    )
-    status = models.CharField(verbose_name='Status',
-                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
-    data_conclusao = models.DateField(verbose_name='Data de conclusão', blank=True,null=True)
-    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
-
+    
     class Meta:
         verbose_name = 'E-mail'
         verbose_name_plural = 'E-mails'
     
     def __str__(self):
-        return f"E-mail:{self.email}\nRemetente:{self.remetente}"
+        return f"E-mail: {self.email}"
     
-class OrdemServico(Base):
+class OrdemServico(Documento):
+    numero_os = models.CharField('Número:', max_length=20, blank=False, unique=True)
+    requerente = models.ForeignKey(Servidor, on_delete=models.PROTECT)  # Relaciona com o modelo User
     assunto = models.CharField(verbose_name='Assunto', max_length=120, blank=False)
-    setor_os = models.ForeignKey(Setor,verbose_name='Setor de origem', on_delete=models.PROTECT)
-    data_os = models.DateField(verbose_name='Data OS', help_text='Data de abertura da OS')
-    TIPO_CHOICES_STATUS = (
-        ('Aberto', 'Aberto'),
-        ('Arquivado', 'Arquivado'),
-        ('Atendido', 'Atendido'),
-    )
-    status = models.CharField(verbose_name='Status',
-                              max_length=9, choices=TIPO_CHOICES_STATUS, default= 'Aberto')
-    data_conclusao = models.DateField(verbose_name='Data de conclusão', blank=True,null=True)
-    observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
-
+    
     class Meta:
         verbose_name = 'Ordem de Serviço'
         verbose_name_plural = 'Ordem de Serviço'
     
     def __str__(self):
-        return self.assunto
+        return f'Ordem de serviço: {self.numero_os}'
+    
+    
