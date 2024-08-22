@@ -43,7 +43,7 @@ class Servidor(Base):
         verbose_name_plural = 'Servidores'
     
     def __str__(self):
-        return f'Nome: {self.nome}'
+        return f'{self.nome}'
     
     def clean(self):
         # Validação personalizada para garantir que a data de entrada seja anterior à data de saída.
@@ -65,6 +65,7 @@ class Documento(Base):
     status = models.CharField(verbose_name='Status',
                               max_length=9, choices=TIPO_CHOICES_STATUS, default='Aberto')
     data_conclusao = models.DateField(_('Data de conclusão'), blank=True,null=True, help_text='Informe a data de conclusão do Processo.')
+    responsavel = models.ForeignKey(Servidor,verbose_name='Responsável', on_delete=models.PROTECT, help_text='Responsável pela carga do documento.')
     observacao = models.TextField(verbose_name='Observações', max_length=400, blank=True)
     anexo = models.FileField(upload_to='anexos/', blank=True, null=True)
 
@@ -76,6 +77,22 @@ class Documento(Base):
     def save(self, *args, **kwargs):
         self.clean()  # Executa a validação ao salvar
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        # Se for uma instância de Processo, retorna o número do processo
+        if hasattr(self, 'processo'):
+            return self.processo.numero_processo
+        # Se for uma instância de Oficio, retorna o número do ofício
+        elif hasattr(self, 'oficio'):
+            return self.oficio.numero_oficio
+        # Se for uma instância de OrdemServico, retorna o número da ordem de serviço
+        elif hasattr(self, 'ordemservico'):
+            return self.ordemservico.numero_os
+        # Se for uma instância de CadastroEmail, retorna o assunto do email
+        elif hasattr(self, 'cadastroemail'):
+            return self.cadastroemail.assunto
+        else:
+            return super().__str__()
 
 class Processo(Documento):
     numero_processo = models.CharField(verbose_name= 'Número do Processo', max_length=20, blank=False, unique=True)
@@ -133,6 +150,7 @@ class Processo(Documento):
         ('REQUERIMENTO', 'Requerimento'),
     )
     assunto = models.CharField(verbose_name='Tipo de Assunto', max_length=255, choices=TIPO_CHOICES_ASSUNTO, blank=False)
+    #inscricao_imob = models.CharField(verbose_name='Inscrição Imobiliária', max_length=11,blank=False)    
         
     class Meta:
         verbose_name = _('Processo')
@@ -174,7 +192,6 @@ class CadastroEmail(Documento):
     
 class OrdemServico(Documento):
     numero_os = models.CharField('Número:', max_length=20, blank=False, unique=True)
-    requerente = models.ForeignKey(Servidor, on_delete=models.PROTECT)  # Relaciona com o modelo User
     assunto = models.CharField(verbose_name='Assunto', max_length=120, blank=False)
     
     class Meta:
@@ -182,6 +199,29 @@ class OrdemServico(Documento):
         verbose_name_plural = 'Ordem de Serviço'
     
     def __str__(self):
-        return f'Ordem de serviço: {self.numero_os}'
+        return f'Ordem de serviço: {self.numero_os}'    
     
+class Tramitacao(models.Model):
+    num_documento = models.ForeignKey(Documento,verbose_name='Documento', on_delete=models.PROTECT) 
+    de = models.ForeignKey(User, verbose_name='De', on_delete=models.PROTECT, related_name='tramitações_criadas')
+    para = models.ForeignKey(User, verbose_name='Para', on_delete=models.PROTECT,limit_choices_to={'is_active': True})
+    criado = models.DateTimeField(_('Data de despacho'), auto_now_add=True)
+    modificado = models.DateTimeField(_('Atualização'), auto_now=True)
+    TIPO_CHOICES_STATUS = (
+        ('Sim', 'Sim'),
+        ('Nao', 'Não'),
+    )
+    status = models.CharField(verbose_name='Recebido',
+                              max_length=3, choices=TIPO_CHOICES_STATUS, default='Nao')
+
+    class Meta:
+        verbose_name = 'Tramitação'
+        verbose_name_plural = 'Tramitações'
     
+    def __str__(self):
+        return str(self.num_documento)  # Isso usará o __str__ do modelo Documentoos
+
+    def save(self, *args, **kwargs):
+        if not self.pk and hasattr(self, '_request') and self._request.user.is_authenticated:
+            self.de = self._request.user
+        super().save(*args, **kwargs)
