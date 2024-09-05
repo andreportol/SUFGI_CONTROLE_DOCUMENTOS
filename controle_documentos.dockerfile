@@ -3,9 +3,12 @@ LABEL mainteiner="André Luzardo Porto <andreportol@gmail.com>"
 COPY . /var/www
 WORKDIR /var/www
 RUN apk update && \
-    apk add zlib-dev jpeg-dev gcc musl-dev && \
+    apk add --no-cache \
+    postgresql-dev \
+    py3-pip \
+    py3-setuptools && \
     pip install --upgrade pip && \
-    pip install -r requirements.txt && \ 
+    pip install -r requirements.txt && \
     python manage.py migrate
 ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 EXPOSE 8000
