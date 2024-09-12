@@ -1,6 +1,7 @@
 __pycache__
 .venv
 .env
+staticfiles
 # Django #
 *.log
 *.pot

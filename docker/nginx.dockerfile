@@ -1,5 +1,5 @@
 FROM nginx:1.19.4-alpine
-LABEL maintainer "Geek University <contato@geekuniversity.com.br>"
+LABEL maintainer "André Luzardo Porto <andreportol@gmail.com.br>"
 ENV PYTHONUBUFFERED 1
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive

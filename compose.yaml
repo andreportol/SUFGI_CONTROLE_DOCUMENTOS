@@ -1,0 +1,76 @@
+networks:
+  nwcontrole:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+services:
+  nginx:
+    build: 
+      dockerfile: ./docker/nginx.dockerfile
+      context: .
+    image: andreportol/nginx_controle:v1
+    container_name: nginx_controle
+    ports:
+      - "8080:80"
+    networks:
+      - nwcontrole
+    depends_on:
+      - controle1
+      - controle2
+      - controle3
+  
+  db_postgres:
+    image: postgres:13
+    container_name: db_postgres_controle
+    ports:
+      - "5432:5432"
+    networks:
+      - nwcontrole
+    environment:
+      POSTGRES_DB: controle_app
+      POSTGRES_USER: controle_user
+      POSTGRES_PASSWORD: controle_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+
+  
+  controle1:
+    build:
+      dockerfile: ./docker/controle_documentos.dockerfile
+      context: .
+    image: andreportol/app_controle_documentos:v1
+    container_name: controle_sufgi_1
+    ports:
+      - "8001:8000"
+    networks:
+      - nwcontrole
+    depends_on:
+      - db_postgres
+
+  controle2:
+    build:
+      dockerfile: ./docker/controle_documentos.dockerfile
+      context: .
+    image: andreportol/app_controle_documentos:v1
+    container_name: controle_sufgi_2
+    ports:
+      - "8002:8000"
+    networks:
+      - nwcontrole
+    depends_on:
+      - db_postgres
+  
+  controle3:
+    build:
+      dockerfile: ./docker/controle_documentos.dockerfile
+      context: .
+    image: andreportol/app_controle_documentos:v1
+    container_name: controle_sufgi_3
+    ports:
+      - "8003:8000"
+    networks:
+      - nwcontrole
+    depends_on:
+      - db_postgres

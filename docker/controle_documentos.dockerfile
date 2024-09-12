@@ -9,6 +9,7 @@ RUN apk update && \
     py3-setuptools && \
     pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    python manage.py migrate
-ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    python manage.py collectstatic --noinput && \
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "ControleDocumentos.wsgi"]
+#ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 EXPOSE 8000
