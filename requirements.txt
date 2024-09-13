@@ -8,3 +8,10 @@ sqlparse==0.5.1
 typing_extensions==4.12.2
 Pillow
 gunicorn
+
+django-stdimage==5.0.1
+progressbar2==3.43.1
+python-utils==2.3.0
+pytz==2019.2
+six==1.12.0
+static3==0.7.0
