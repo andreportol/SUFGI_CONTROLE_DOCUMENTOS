@@ -13,7 +13,7 @@ services:
     image: andreportol/nginx_controle:v1
     container_name: nginx_controle
     ports:
-      - "8081:80"
+      - "80:80"
     networks:
       - nwcontrole
     depends_on:
